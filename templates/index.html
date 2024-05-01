@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Home</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+
+    <body>
+        <header>
+            Object detection using YOLO
+        </header>
+        <form id="form" enctype="multipart/form-data">
+            <!-- <input type="number" placeholder="Enter confidence(default:0.25)"> <br> -->
+            <label for="fileInput">
+                <div class="btn">
+                    select file
+                </div>
+            </label>
+            <input type="file" id="fileInput" name="image">
+            <img src="" id="image">
+            <div id="loader"></div>
+            <div id="result"></div>
+            <div id="out">
+                <a target="_blank" href="{{ url_for('static', filename='result.jpg') }}">output</a>
+            </div>
+            <input type="submit" id="submitBtn" value="predict">
+        </form>
+
+        <script>
+            const fileInput = document.querySelector("#fileInput");
+            const image = document.querySelector("#image");
+            const form = document.querySelector("#form");
+            const result = document.querySelector("#result");
+            const submitBtn = document.querySelector("#submitBtn");
+            const loader = document.querySelector("#loader");
+            const out = document.querySelector("#out");
+
+            out.style.display = 'none';
+            loader.style.display = 'none';
+            submitBtn.style.display = 'none';
+
+            fileInput.onchange = () => {
+                result.innerHTML = '';
+                out.style.display = 'none';
+
+                let file = fileInput.files[0];
+                
+                if(file.type.startsWith("image/")) {
+                    renderImage(file);
+                    submitBtn.style.display = 'block';
+                }
+                else {
+                    result.innerHTML = "<h1>Please select an image file</h1>"
+                }
+            }
+
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                submitBtn.style.display = 'none';
+                loader.style.display = 'block';
+                apiCall();
+            }
+
+            function renderImage(file) {
+                let render = new FileReader();
+                render.readAsDataURL(file);
+            
+                render.onload = () => {
+                    image.setAttribute('src', render.result);
+                };
+            }
+
+            function apiCall() {
+                formData = new FormData(form);
+
+                fetch('/predict', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then((res) => res.json())
+                .then((data) => {
+                    console.log(data);
+                    loader.style.display = 'none';
+                    renderResult(data);
+                    out.style.display = 'block';
+                })
+                .catch((error) => console.log(error));
+            }
+
+            function renderResult(data) {
+                let flag = 1;
+
+                for (var i in data){
+                    flag = 0;
+                    console.log(i);
+                    br = document.createElement("br");
+                    result.innerHTML += i;
+                    result.append(br);
+
+                    for (var key in data[i]){
+                        result.innerHTML += `${key} : ${data[i][key]}`;
+                        result.append(br);
+                        console.log( key + ": " + data[i][key]);
+                    }
+                }
+
+                if(flag) {
+                    result.innerHTML = "<h1>Unable to detect the objects</h1> ";
+                }
+            }
+
+            
+        </script>
+
+    </body>
+</html>
